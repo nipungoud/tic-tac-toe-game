@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Tic Tac Toe</h1>
+    
+    <!-- Scoreboard -->
+    <div id="score">
+        <p>Player: <span id="player-score">{{ player_score }}</span></p>
+        <p>AI: <span id="ai-score">{{ ai_score }}</span></p>
+    </div>
+
+    <!-- Game Board -->
+    <div id="game-board">
+        {% for row in board %}
+            <div class="row">
+                {% for (i, j, cell) in row %}
+                    <button class="cell" data-row="{{ i }}" data-col="{{ j }}">
+                        {{ cell }}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Status Message -->
+    <div id="status-message">
+        {% if winner %}
+            <p class="message">{{ 'It\'s a draw!' if winner == 'Draw' else winner + ' wins!' }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Reset Button -->
+    <div id="controls">
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <!-- Audio for moves -->
+    <audio id="move-sound" src="{{ url_for('static', filename='move.mp3') }}" preload="auto"></audio>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Play sound on each move
+            const moveSound = $('#move-sound')[0];
+
+            $('.cell').click(function () {
+                const row = $(this).data('row');
+                const col = $(this).data('col');
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/move',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ row: row, col: col }),
+                    success: function (response) {
+                        moveSound.play(); // Play sound on move
+                        updateBoard(response);
+                    }
+                });
+            });
+
+            // Reset the game
+            $('#reset-btn').click(function () {
+                $.ajax({
+                    type: 'POST',
+                    url: '/reset',
+                    success: function (response) {
+                        updateBoard(response);
+                    }
+                });
+            });
+
+            // Function to update the board and UI after every move
+            function updateBoard(response) {
+                let board = response.board;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        $('button[data-row="'+i+'"][data-col="'+j+'"]').text(board[i][j][2]);
+                    }
+                }
+
+                // Update score
+                $('#player-score').text(response.player_score);
+                $('#ai-score').text(response.ai_score);
+
+                // Update status message
+                if (response.winner) {
+                    const message = response.winner === 'Draw' ? "It's a draw!" : `${response.winner} wins!`;
+                    $('#status-message').html(`<p class="message">${message}</p>`).show();
+                } else {
+                    $('#status-message').hide();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
