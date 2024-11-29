@@ -1,0 +1,3 @@
+Flask==2.3.3
+Gunicorn==20.1.0
+flask-session==0.4.0
